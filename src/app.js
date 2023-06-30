@@ -59,6 +59,14 @@ app.post("/participants", async (req, res) => {
         name,
         lastStatus: Date.now()
     }
+
+    // const entrouSala = {
+    //         from: {name},
+    //         to: 'Todos',
+    //         text: 'entra na sala...',
+    //         type: 'status',
+    //         time: 'HH:mm:ss'
+    // }
     
     await db.collection("participants").insertOne(novoParticipante)
         return res.sendStatus(201)
@@ -81,9 +89,52 @@ app.get("/participants", (req, res) =>{
       
 })
 
+/// postar menssagem 
+app.post("/messages", async (req, res)=>{
+
+    /// pegando login
+    const {auth} = req.headers
+    if(!auth){
+        return res.status(401).send("Não autorizado. Cabeçalho 'auth' não fornecido.");
+    }
+
+    const {to, text, type} = req.body
+
+    const menssagem = {to, text, type}
+
+    const menssagemSchema = joi.object({
+            to: joi.string(),
+            text: joi.string(),
+            type: joi.string().valid('message', 'private_message')
+    })
+    const validacaoMensagem =  menssagemSchema.validate(menssagem)
+
+    try{
+
+        if(validacaoMensagem.error) {return res.status(409)}
+        const participanteExistente = await db.collection("participants").findOne({name:to})
+        if(!participanteExistente) { return res.status(409)}
+
+        await db.collection("messages").insertOne(validacaoMensagem)
+        return res.sendStatus(201)
+
+    }
+    catch (err) {
+        res.status(500).send(err.message);
+    }
+
+
+})
+
+
+/// receber menssagem
+
+app.get("/messages", (req, res)=>{
+  
+})
 
 
 
 /// porta sendo utilizada
-const PORT = 5000
+const PORT = 4000
 app.listen(PORT, () =>console.log(`servidor está rodando na porta ${PORT}`))
