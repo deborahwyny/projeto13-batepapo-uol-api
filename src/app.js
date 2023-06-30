@@ -129,9 +129,18 @@ app.post("/messages", async (req, res)=>{
 
 /// receber menssagem
 
-app.get("/messages", (req, res)=>{
+app.get("/messages", (req, res) => {
+    db.collection("messages")
+      .find()
+      .toArray()
+      .then((data) => {
+        res.send(data);
+      })
+      .catch((err) => {
+        res.status(500).send(err.message);
+      });
+  });
   
-})
 
 
 
