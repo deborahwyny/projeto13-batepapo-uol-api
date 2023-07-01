@@ -23,7 +23,6 @@ mongoClient.connect()
 
 /// variaveis globais
 
-const listaParticipantes = []
 
 const validadorUser = joi.object({
     name: joi.string().required()
@@ -38,15 +37,6 @@ const date = Date.now()
 app.post("/participants", async (req, res) => {
     const {name} = req.body
 
-    const {error} = validadorUser.validate({name})
-    if(error) return res.status(422).send("Preencha todos os campos!")
-
-
-    
-    // const novoParticipante = {
-    //     name,
-    //     lastStatus: Date.now()
-    // }
 	try {
 
     const {error} = validadorUser.validate({name})
@@ -55,20 +45,24 @@ app.post("/participants", async (req, res) => {
     const participanteExistente = await db.collection("participants").findOne({name:name})
      if(participanteExistente) { return res.status(409).send("Essa usuario já existe!")}
 
+        const data = Date.now()
+    const horario = dayjs(data).format('HH:mm:ss');
+
      const novoParticipante = {
         name,
-        lastStatus: Date.now()
+        lastStatus: data
     }
 
-    // const entrouSala = {
-    //         from: {name},
-    //         to: 'Todos',
-    //         text: 'entra na sala...',
-    //         type: 'status',
-    //         time: 'HH:mm:ss'
-    // }
+    const entrouSala = {
+            from: {name},
+            to: 'Todos',
+            text: 'entra na sala...',
+            type: 'status',
+            time: horario
+    }
     
     await db.collection("participants").insertOne(novoParticipante)
+    await db.collection("messages").insertOne(entrouSala)
         return res.sendStatus(201)
 
     }catch (err) {
@@ -78,14 +72,18 @@ app.post("/participants", async (req, res) => {
 
 //// Retornar a lista de todos os participantes
 
-app.get("/participants", (req, res) =>{
+app.get("/participants", async (req, res) =>{
 
 
-    db.collection("participants").find().toArray()
-    .then((data) => {
-        res.send(data)})
-    .catch((err) => {
-        res.status(500).send(err.message)})
+    try {
+        const listaParticipantes = await db.collection("participants").find().toArray()
+            res.send(listaParticipantes)
+          
+        }
+        catch (err) {
+            res.status(500).send(err.message);
+        }
+    
       
 })
 
@@ -126,19 +124,26 @@ app.post("/messages", async (req, res)=>{
 
 })
 
-
 /// receber menssagem
 
-app.get("/messages", (req, res) => {
-    db.collection("messages")
-      .find()
-      .toArray()
-      .then((data) => {
-        res.send(data);
-      })
-      .catch((err) => {
+app.get("/messages", async (req, res) => {
+
+    // const {limit} = req.query
+    // const limite = {limit}
+
+
+    try {
+    const mensagem = await db.collection("messages").find().toArray()
+
+    // if(limite === 0 || limite === undefined){
+    //     return res.sendStatus(422)
+    // }
+        res.send(mensagem)
+      
+    }
+    catch (err) {
         res.status(500).send(err.message);
-      });
+    }
   });
   
 
