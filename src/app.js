@@ -91,9 +91,9 @@ app.get("/participants", async (req, res) =>{
 app.post("/messages", async (req, res)=>{
 
     /// pegando login
-    const {auth} = req.headers
-    if(!auth){
-        return res.status(401).send("Não autorizado. Cabeçalho 'auth' não fornecido.");
+    const {user} = req.headers
+    if(!user){
+        return res.status(401)
     }
 
     const {to, text, type} = req.body
@@ -107,13 +107,23 @@ app.post("/messages", async (req, res)=>{
     })
     const validacaoMensagem =  menssagemSchema.validate(menssagem)
 
+    const data = Date.now()
+    const horario = dayjs(data).format('HH:mm:ss');
+
+    const messagemTime = {
+        to:to, 
+        text:text, 
+        type:type,
+        time:horario
+    }
+
     try{
 
         if(validacaoMensagem.error) {return res.status(409)}
         const participanteExistente = await db.collection("participants").findOne({name:to})
         if(!participanteExistente) { return res.status(409)}
 
-        await db.collection("messages").insertOne(validacaoMensagem)
+        await db.collection("messages").insertOne(messagemTime)
         return res.sendStatus(201)
 
     }
