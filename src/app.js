@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from "dotenv"
-import { MongoClient } from "mongodb"
+import { MongoClient, ObjectId } from "mongodb"
 import joi from "joi"
 import dayjs from 'dayjs'
 
@@ -40,12 +40,12 @@ app.post("/participants", async (req, res) => {
 	try {
 
     const {error} = validadorUser.validate({name})
-    if(error) return res.status(422).send("Preencha todos os campos!")
+        if(error) return res.status(422).send("Preencha todos os campos!")
 
     const participanteExistente = await db.collection("participants").findOne({name:name})
-     if(participanteExistente) { return res.status(409).send("Essa usuario já existe!")}
+        if(participanteExistente) { return res.status(409).send("Essa usuario já existe!")}
 
-        const data = Date.now()
+    const data = Date.now()
     const horario = dayjs(data).format('HH:mm:ss');
 
      const novoParticipante = {
@@ -141,6 +141,11 @@ app.get("/messages", async (req, res) => {
     // const {limit} = req.query
     // const limite = {limit}
 
+    const {user} = req.headers
+    if(!user){
+        return res.status(401)
+    }
+
 
     try {
     const mensagem = await db.collection("messages").find().toArray()
@@ -157,8 +162,33 @@ app.get("/messages", async (req, res) => {
   });
   
 
+app.post("/status", async (req, res)=>{
+
+
+    try {
+        const {user} = req.headers
+        if(!user){
+            return res.status(401).send("Não autorizado. Cabeçalho 'user' não fornecido.");
+        }
+        const participante = await db.collection("participants").findOne({name: user})
+        if(!participante) {
+            return res.status(404).send("Participante não encontrado.");
+        }
+
+        participante.lastStatus = Date.now()
+        await db.collection("participants").updateOne({ _id: participante._id }, { $set: { lastStatus: participante.lastStatus } });
+
+            res.sendStatus(200)
+
+    }
+    catch (err) {
+        res.status(500).send(err.message);
+    }
+  
+})
+
 
 
 /// porta sendo utilizada
-const PORT = 4000
+const PORT = 5000
 app.listen(PORT, () =>console.log(`servidor está rodando na porta ${PORT}`))
