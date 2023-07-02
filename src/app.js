@@ -111,6 +111,7 @@ app.post("/messages", async (req, res)=>{
     const horario = dayjs(data).format('HH:mm:ss');
 
     const messagemTime = {
+        from:user,
         to:to, 
         text:text, 
         type:type,
@@ -119,9 +120,9 @@ app.post("/messages", async (req, res)=>{
 
     try{
 
-        if(validacaoMensagem.error) {return res.status(409)}
-        const participanteExistente = await db.collection("participants").findOne({name:to})
-        if(!participanteExistente) { return res.status(409)}
+        if(validacaoMensagem.error) {return res.sendStatus(422)}
+        const participanteExistente = await db.collection("participants").findOne({name:user})
+        if(!participanteExistente) { return res.sendStatus(422)}
 
         await db.collection("messages").insertOne(messagemTime)
         return res.sendStatus(201)
@@ -148,7 +149,15 @@ app.get("/messages", async (req, res) => {
 
 
     try {
-    const mensagem = await db.collection("messages").find().toArray()
+
+    const participante = await db.collection("participants").findOne({name:user})
+    const username = participante.name
+
+    const mensagem = await db.collection("messages").find({$or: [
+        {to:username},
+        {to:"todos"},
+        {from:username}
+    ]}).toArray()
 
     // if(limite === 0 || limite === undefined){
     //     return res.sendStatus(422)
