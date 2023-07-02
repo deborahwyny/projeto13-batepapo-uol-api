@@ -139,8 +139,7 @@ app.post("/messages", async (req, res)=>{
 
 app.get("/messages", async (req, res) => {
 
-    // const {limit} = req.query
-    // const limite = {limit}
+    const {limit} = req.query
 
     const {user} = req.headers
     if(!user){
@@ -149,20 +148,32 @@ app.get("/messages", async (req, res) => {
 
 
     try {
+        const participante = await db.collection("participants").findOne({name:user})
+        const username = participante.name
+        let mensagem;
 
-    const participante = await db.collection("participants").findOne({name:user})
-    const username = participante.name
+        if(!limit) {
+            mensagem = await db.collection("messages").find({$or: [
+                {to:username},
+                {to:"todos"},
+                {from:username}
+            ]}).sort({ time: -1 })
+        } else if (limit == 0 || limit <=0 || isNaN(parseInt(limit))) {
+            return res.status(422).send("Parâmetro de limite inválido.");
+        }
 
-    const mensagem = await db.collection("messages").find({$or: [
-        {to:username},
-        {to:"todos"},
-        {from:username}
-    ]}).toArray()
 
-    // if(limite === 0 || limite === undefined){
-    //     return res.sendStatus(422)
-    // }
-        res.send(mensagem)
+        if(limit) {
+            mensagem = await db.collection("messages").find({$or: [
+                {to:username},
+                {to:"todos"},
+                {from:username}
+            ]}).sort({ time: -1 }).limit(parseInt(limit))
+        }
+
+    const messagesArray = await mensagem.toArray();
+
+    return res.status(200).send(messagesArray);
       
     }
     catch (err) {
