@@ -54,7 +54,7 @@ app.post("/participants", async (req, res) => {
     }
 
     const entrouSala = {
-            from: {name},
+            from: name,
             to: 'Todos',
             text: 'entra na sala...',
             type: 'status',
@@ -111,7 +111,7 @@ app.post("/messages", async (req, res)=>{
     const horario = dayjs(data).format('HH:mm:ss');
 
     const messagemTime = {
-        from:name,
+        from:user,
         to:to, 
         text:text, 
         type:type,
@@ -155,7 +155,7 @@ app.get("/messages", async (req, res) => {
         if(!limit) {
             mensagem = await db.collection("messages").find({$or: [
                 {to:username},
-                {to:"todos"},
+                {to:"Todos"},
                 {from:username}
             ]}).sort({ time: -1 })
         } else if (limit == 0 || limit <=0 || isNaN(parseInt(limit))) {
