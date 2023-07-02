@@ -54,7 +54,7 @@ app.post("/participants", async (req, res) => {
     }
 
     const entrouSala = {
-            from: name,
+            from: {name},
             to: 'Todos',
             text: 'entra na sala...',
             type: 'status',
@@ -111,7 +111,7 @@ app.post("/messages", async (req, res)=>{
     const horario = dayjs(data).format('HH:mm:ss');
 
     const messagemTime = {
-        from:user,
+        from:name,
         to:to, 
         text:text, 
         type:type,
@@ -155,7 +155,7 @@ app.get("/messages", async (req, res) => {
         if(!limit) {
             mensagem = await db.collection("messages").find({$or: [
                 {to:username},
-                {to:"Todos"},
+                {to:"todos"},
                 {from:username}
             ]}).sort({ time: -1 })
         } else if (limit == 0 || limit <=0 || isNaN(parseInt(limit))) {
@@ -166,7 +166,7 @@ app.get("/messages", async (req, res) => {
         if(limit) {
             mensagem = await db.collection("messages").find({$or: [
                 {to:username},
-                {to:"todos"},
+                {to:"Todos"},
                 {from:username}
             ]}).sort({ time: -1 }).limit(parseInt(limit))
         }
@@ -211,9 +211,38 @@ app.post("/status", async (req, res)=>{
 /// delete usuario
 
 
+async function deleteInactive(){
 
 
-// setInterval(deleteInactive, 15 * 1000)
+    try {
+    const limite = Date.now() - 10 * 1000;
+    const user = await db.collection("participants").find({lastStatus: { $lt: limite }}).toArray()
+    if(user && user.length !== 0){
+        const data = Date.now()
+        const horario = dayjs(data).format('HH:mm:ss');
+        let listaMensagens = []
+    
+        user.forEach(usuario => {
+            const mens = {
+                from: usuario.name,
+                to: 'Todos',
+                text: 'sai da sala...',
+                type: 'status',
+                time:horario
+            }
+            listaMensagens.push(mens)
+        });
+        const mensagemSaida = await db.collection("messages").insertMany(listaMensagens)
+       const userIds = user.map(user => user._id); 
+        const result = await db.collection("participants").deleteMany({ _id: { $in: userIds } });
+    }
+
+   } catch(err) {
+    console.log(err)
+}
+}
+
+setInterval(deleteInactive, 2 * 1000)
 
 
 
