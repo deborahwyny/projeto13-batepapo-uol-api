@@ -54,7 +54,7 @@ app.post("/participants", async (req, res) => {
     }
 
     const entrouSala = {
-            from: {name},
+            from: name,
             to: 'Todos',
             text: 'entra na sala...',
             type: 'status',
@@ -155,7 +155,7 @@ app.get("/messages", async (req, res) => {
         if(!limit) {
             mensagem = await db.collection("messages").find({$or: [
                 {to:username},
-                {to:"todos"},
+                {to:"Todos"},
                 {from:username}
             ]}).sort({ time: -1 })
         } else if (limit == 0 || limit <=0 || isNaN(parseInt(limit))) {
@@ -182,13 +182,14 @@ app.get("/messages", async (req, res) => {
   });
   
 
+/// status usario  
 app.post("/status", async (req, res)=>{
 
 
     try {
         const {user} = req.headers
         if(!user){
-            return res.status(401).send("Não autorizado. Cabeçalho 'user' não fornecido.");
+            return res.status(404).send("Não autorizado. Cabeçalho 'user' não fornecido.");
         }
         const participante = await db.collection("participants").findOne({name: user})
         if(!participante) {
@@ -206,6 +207,17 @@ app.post("/status", async (req, res)=>{
     }
   
 })
+
+/// delete usuario
+
+
+
+
+// setInterval(deleteInactive, 15 * 1000)
+
+
+
+
 
 
 
