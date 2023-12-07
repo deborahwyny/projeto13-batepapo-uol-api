@@ -251,5 +251,5 @@ setInterval(deleteInactive, 2 * 1000)
 
 
 /// porta sendo utilizada
-const PORT = 5000
-app.listen(PORT, () =>console.log(`servidor está rodando na porta ${PORT}`))
+const port = process.env.PORT || 5000
+app.listen(port, () =>console.log(`servidor está rodando na porta ${port}`))
