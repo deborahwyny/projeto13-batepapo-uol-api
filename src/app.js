@@ -5,14 +5,14 @@ import { MongoClient } from "mongodb"
 import joi from "joi"
 import dayjs from 'dayjs'
 
-/// configurações
+/// settings
 const app = express();
 app.use(cors());
 app.use(express.json())
 dotenv.config()
 
 
-/// conexão com o banco
+/// database connection
 const mongoClient = new MongoClient(process.env.DATABASE_URL)
 let db
 
@@ -21,48 +21,48 @@ mongoClient.connect()
     .catch((err)=> console.log(err.message))
 
 
-/// variaveis globais
+/// global variables
 
 
-const validadorUser = joi.object({
+const validationUser = joi.object({
     name: joi.string().required()
 })
 
 const date = Date.now()
 
-/// funções 
+/// functions 
 
 
-/// login participante 
+/// login participant 
 app.post("/participants", async (req, res) => {
     const {name} = req.body
 
 	try {
 
-    const {error} = validadorUser.validate({name})
-        if(error) return res.status(422).send("Preencha todos os campos!")
+    const {error} = validationUser.validate({name})
+        if(error) return res.status(422).send("Fill in all the fields!")
 
-    const participanteExistente = await db.collection("participants").findOne({name:name})
-        if(participanteExistente) { return res.status(409).send("Essa usuario já existe!")}
+    const existingParticipant = await db.collection("participants").findOne({name:name})
+        if(existingParticipant) { return res.status(409).send("This user already exists!")}
 
-    const data = Date.now()
-    const horario = dayjs(data).format('HH:mm:ss');
+    const date = Date.now()
+    const hour = dayjs(date).format('HH:mm:ss');
 
-     const novoParticipante = {
+     const newParticipant = {
         name,
-        lastStatus: data
+        lastStatus: date
     }
 
-    const entrouSala = {
+    const room = {
             from: name,
             to: 'Todos',
             text: 'entra na sala...',
             type: 'status',
-            time: horario
+            time: hour
     }
     
-    await db.collection("participants").insertOne(novoParticipante)
-    await db.collection("messages").insertOne(entrouSala)
+    await db.collection("participants").insertOne(newParticipant)
+    await db.collection("messages").insertOne(room)
         return res.sendStatus(201)
 
     }catch (err) {
@@ -70,14 +70,14 @@ app.post("/participants", async (req, res) => {
     }
 });
 
-//// Retornar a lista de todos os participantes
+//// return list with all participants
 
 app.get("/participants", async (req, res) =>{
 
 
     try {
-        const listaParticipantes = await db.collection("participants").find().toArray()
-            res.send(listaParticipantes)
+        const listParticipants = await db.collection("participants").find().toArray()
+            res.send(listParticipants)
           
         }
         catch (err) {
@@ -87,10 +87,10 @@ app.get("/participants", async (req, res) =>{
       
 })
 
-/// postar menssagem 
+/// post message 
 app.post("/messages", async (req, res)=>{
 
-    /// pegando login
+    /// login
     const {user} = req.headers
     if(!user){
         return res.status(401)
@@ -98,33 +98,33 @@ app.post("/messages", async (req, res)=>{
 
     const {to, text, type} = req.body
 
-    const menssagem = {to, text, type}
+    const message = {to, text, type}
 
-    const menssagemSchema = joi.object({
+    const messageSchema = joi.object({
             to: joi.string(),
             text: joi.string(),
             type: joi.string().valid('message', 'private_message')
     })
-    const validacaoMensagem =  menssagemSchema.validate(menssagem)
+    const validationMessage =  messageSchema.validate(message)
 
-    const data = Date.now()
-    const horario = dayjs(data).format('HH:mm:ss');
+    const date = Date.now()
+    const hour = dayjs(date).format('HH:mm:ss');
 
-    const messagemTime = {
+    const messageTime = {
         from:user,
         to:to, 
         text:text, 
         type:type,
-        time:horario
+        time:hour
     }
 
     try{
 
-        if(validacaoMensagem.error) {return res.sendStatus(422)}
-        const participanteExistente = await db.collection("participants").findOne({name:user})
-        if(!participanteExistente) { return res.sendStatus(422)}
+        if(validationMessage.error) {return res.sendStatus(422)}
+        const existingParticipant = await db.collection("participants").findOne({name:user})
+        if(!existingParticipant) { return res.sendStatus(422)}
 
-        await db.collection("messages").insertOne(messagemTime)
+        await db.collection("messages").insertOne(messageTime)
         return res.sendStatus(201)
 
     }
@@ -135,7 +135,7 @@ app.post("/messages", async (req, res)=>{
 
 })
 
-/// receber menssagem
+/// get message
 
 app.get("/messages", async (req, res) => {
 
@@ -148,8 +148,8 @@ app.get("/messages", async (req, res) => {
 
 
     try {
-        const participante = await db.collection("participants").findOne({name:user})
-        const username = participante.name
+        const participant = await db.collection("participants").findOne({name:user})
+        const username = participant.name
         let mensagem;
 
         if(!limit) {
@@ -159,7 +159,7 @@ app.get("/messages", async (req, res) => {
                 {from:username}
             ]}).sort({ time: -1 })
         } else if (limit == 0 || limit <=0 || isNaN(parseInt(limit))) {
-            return res.status(422).send("Parâmetro de limite inválido.");
+            return res.status(422).send("Invalid parameter.");
         }
 
 
@@ -182,22 +182,22 @@ app.get("/messages", async (req, res) => {
   });
   
 
-/// status usario  
+/// status user  
 app.post("/status", async (req, res)=>{
 
 
     try {
         const {user} = req.headers
         if(!user){
-            return res.status(404).send("Não autorizado. Cabeçalho 'user' não fornecido.");
+            return res.status(404).send("Not authorized. 'user' header not provided");
         }
-        const participante = await db.collection("participants").findOne({name: user})
-        if(!participante) {
-            return res.status(404).send("Participante não encontrado.");
+        const participant = await db.collection("participants").findOne({name: user})
+        if(!participant) {
+            return res.status(404).send("participant not found");
         }
 
-        participante.lastStatus = Date.now()
-        await db.collection("participants").updateOne({ _id: participante._id }, { $set: { lastStatus: participante.lastStatus } });
+        participant.lastStatus = Date.now()
+        await db.collection("participants").updateOne({ _id: participant._id }, { $set: { lastStatus: participant.lastStatus } });
 
             res.sendStatus(200)
 
@@ -208,7 +208,7 @@ app.post("/status", async (req, res)=>{
   
 })
 
-/// delete usuario
+/// delete user
 
 
 async function deleteInactive(){
@@ -218,8 +218,8 @@ async function deleteInactive(){
     const limite = Date.now() - 10 * 1000;
     const user = await db.collection("participants").find({lastStatus: { $lt: limite }}).toArray()
     if(user && user.length !== 0){
-        const data = Date.now()
-        const horario = dayjs(data).format('HH:mm:ss');
+        const date = Date.now()
+        const hour = dayjs(date).format('HH:mm:ss');
         let listaMensagens = []
     
         user.forEach(usuario => {
@@ -228,7 +228,7 @@ async function deleteInactive(){
                 to: 'Todos',
                 text: 'sai da sala...',
                 type: 'status',
-                time:horario
+                time:hour
             }
             listaMensagens.push(mens)
         });
@@ -250,6 +250,6 @@ setInterval(deleteInactive, 2 * 1000)
 
 
 
-/// porta sendo utilizada
+/// port
 const port = process.env.PORT || 5000
-app.listen(port, () =>console.log(`servidor está rodando na porta ${port}`))
+app.listen(port, () =>console.log(`server is running on the port ${port}`))
