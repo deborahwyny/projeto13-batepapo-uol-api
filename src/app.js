@@ -5,14 +5,12 @@ import { MongoClient } from "mongodb"
 import joi from "joi"
 import dayjs from 'dayjs'
 
-/// settings
 const app = express();
 app.use(cors());
 app.use(express.json())
 dotenv.config()
 
 
-/// database connection
 const mongoClient = new MongoClient(process.env.DATABASE_URL)
 let db
 
@@ -21,7 +19,6 @@ mongoClient.connect()
     .catch((err)=> console.log(err.message))
 
 
-/// global variables
 
 
 const validationUser = joi.object({
@@ -30,10 +27,8 @@ const validationUser = joi.object({
 
 const date = Date.now()
 
-/// functions 
 
 
-/// login participant 
 app.post("/participants", async (req, res) => {
     const {name} = req.body
 
@@ -87,10 +82,8 @@ app.get("/participants", async (req, res) =>{
       
 })
 
-/// post message 
 app.post("/messages", async (req, res)=>{
 
-    /// login
     const {user} = req.headers
     if(!user){
         return res.status(401)
@@ -135,7 +128,6 @@ app.post("/messages", async (req, res)=>{
 
 })
 
-/// get message
 
 app.get("/messages", async (req, res) => {
 
@@ -182,7 +174,6 @@ app.get("/messages", async (req, res) => {
   });
   
 
-/// status user  
 app.post("/status", async (req, res)=>{
 
 
@@ -208,7 +199,6 @@ app.post("/status", async (req, res)=>{
   
 })
 
-/// delete user
 
 
 async function deleteInactive(){
@@ -244,12 +234,5 @@ async function deleteInactive(){
 
 setInterval(deleteInactive, 2 * 1000)
 
-
-
-
-
-
-
-/// port
 const port = process.env.PORT || 5000
 app.listen(port, () =>console.log(`server is running on the port ${port}`))
